@@ -3,3 +3,4 @@ vanna
 Flask
 twilio
 gunicorn
+python-dotenv
