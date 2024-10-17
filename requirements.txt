@@ -1,3 +1,4 @@
+dotenv
 openai
 vanna
 Flask
