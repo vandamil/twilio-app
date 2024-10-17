@@ -2,3 +2,4 @@ openai
 vanna
 Flask
 twilio
+gunicorn
