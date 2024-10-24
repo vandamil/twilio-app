@@ -1,10 +1,12 @@
+from dotenv import load_dotenv
+from datetime import datetime
 from flask import Flask, request
+from openai import OpenAI
 from twilio.twiml.messaging_response import MessagingResponse
 from vanna.openai import OpenAI_Chat
-from openai import OpenAI
 from vanna.vannadb import VannaDB_VectorStore
+import psycopg2
 import os
-from dotenv import load_dotenv
 
 app = Flask(__name__)
 
@@ -12,6 +14,7 @@ load_dotenv()
 MY_VANNA_MODEL = os.environ["MY_VANNA_MODEL"]
 vanna_api_key = os.environ["vanna_api_key"]
 api_key = os.environ["api_key"]
+postgres_key = os.environ["postgres_key"]
 
 
 class MyVanna(VannaDB_VectorStore, OpenAI_Chat):
@@ -33,26 +36,43 @@ def df(sql_q):
 def summary(qn,df):
     return vn.generate_summary(question=qn,df=df)  
 
-def summary_q(query: str):
-    r = sql(question=query)
-    d = df(r)
-    return summary(qn=query,df=d)
+def store_data(phone_number,question,sql_query,response):
+    
+    conn = psycopg2.connect(postgres_key)
+    cur = conn.cursor()
+    
+    cur.execute('''CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                phone_number VARCHAR(15),
+                question TEXT,
+                sql_query TEXT,
+                response TEXT,
+                date_time TIMESTAMP);''')
+    
+    cur.execute("INSERT INTO users (phone_number, question, sql_query, response, date_time) VALUES (%s, %s, %s, %s, %s)",(phone_number,question,sql_query,response,datetime.now()))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 @app.route("/message", methods=['POST'])
 def receive_message():
+    
     # Get the incoming message from the request
-    incoming_msg = request.values.get('Body', '').lower()
+    phone_number = request.values.get('From', '').replace('whatsapp:','')
+    question = request.values.get('Body', '')
+    sql_query = sql(question)
+    response = summary(question,df(sql_query))
 
     # Create Twilio response
     resp = MessagingResponse()
     msg = resp.message()
-
-    response = summary_q(incoming_msg)
-
     msg.body(response)
+    
+    store_data(phone_number,question,sql_query,response)
+    
     return str(resp)
 
 if __name__ == "__main__":
     app.run(debug=True)
-

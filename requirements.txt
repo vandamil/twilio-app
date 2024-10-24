@@ -3,4 +3,6 @@ vanna
 Flask
 twilio
 gunicorn
+psycopg2
+datetime
 python-dotenv
