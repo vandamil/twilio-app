@@ -63,7 +63,7 @@ def receive_message():
     phone_number = request.values.get('From', '').replace('whatsapp:','')
     question = request.values.get('Body', '')
     sql_query = sql(question)
-    response = summary(question,df(sql_query))
+    response = summary(question,df(sql_query))+"\n"+"Want more insights? Check out our website!"+"\n"+"https://cricace-2024.streamlit.app/"
 
     # Create Twilio response
     resp = MessagingResponse()
