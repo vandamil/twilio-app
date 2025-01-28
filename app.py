@@ -71,8 +71,10 @@ def receive_message():
     msg = resp.message()
     msg.body(reply)
     
-    store_data(phone_number,question,sql_query,response)
-    
+    try:
+        store_data(phone_number,question,sql_query,response)
+    except:
+        pass
     return str(resp)
 
 if __name__ == "__main__":
